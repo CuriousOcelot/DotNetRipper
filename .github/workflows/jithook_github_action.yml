@@ -1,0 +1,135 @@
+# This is GitHub action file to compile test binaries of https://github.com/LJP-TW/JITHook
+# Note edit *.cproj files to compile for x64 and x86 architectures
+
+name: Compile LJP-TW/JITHook binaries
+
+on: [ workflow_dispatch ]  # Manual trigger
+
+jobs:
+  compile:
+    runs-on: windows-latest
+    strategy:
+
+      matrix:
+        arch: [ x64, x86 ]
+
+    steps:
+
+      #- name: Restore cache for build and test binaries
+      #  id: cache-build
+      #  uses: actions/cache@v4
+      #  with:
+      #    path: |
+      #      Release
+      #      test_binary
+      #    key: build-cache-binaries
+
+      #- name: Checkout code
+      #  #if: steps.cache-build.outputs.cache-hit != 'true'
+      #  uses: actions/checkout@v3
+      #  with:
+      #    submodules: recursive
+
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Clone https://github.com/LJP-TW/JITHook
+        run: |
+          git clone  --recursive https://github.com/LJP-TW/JITHook
+          
+      - name: Setup the build type
+        run: |
+          python ./extra/jithook_compiler_helper.py ./JITHook ${{ matrix.arch }}
+
+      # - name: Cache LIEF
+      #   id: cache-lief
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: JITHook/Lib/LIEF-0.12.1-win64
+      #     key: lief-0.12.1-win64
+
+      # - name: Download LIEF if not cached
+      #   if: steps.cache-lief.outputs.cache-hit != 'true'
+      #   run: |
+      #     mkdir tmp
+      #     curl -L -o tmp/LIEF.zip https://github.com/lief-project/LIEF/releases/download/0.12.1/LIEF-0.12.1-win64.zip
+      #     Expand-Archive -Path tmp/LIEF.zip -DestinationPath tmp
+      #     Remove-Item -Recurse -Force tmp/LIEF-0.12.1-win64/bin
+      #     Remove-Item -Recurse -Force tmp/LIEF-0.12.1-win64/share
+      #     mkdir JITHook\Lib\LIEF-0.12.1-win64
+      #     Copy-Item -Path tmp\LIEF-0.12.1-win64\* -Destination JITHook\Lib\LIEF-0.12.1-win64 -Recurse
+      #     Remove-Item -Recurse -Force tmp
+
+      # - name: Display LIEF directory tree
+      #   shell: pwsh
+      #   run: |
+      #         Get-ChildItem -Recurse JITHook\Lib\LIEF-0.12.1-win64 | Format-List FullName
+
+
+      - name: Setup MSBuild path
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Restore NuGet packages
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          cd JITHook    
+          nuget restore JIT_Hook.sln
+
+      - name: Build with MSBuild
+        if: steps.cache-build.outputs.cache-hit != 'true'
+        run: |
+          cd JITHook    
+          msbuild JIT_Hook.sln /p:Configuration=Release /p:Platform=x64
+          # msbuild JIT_Hook.sln /p:Configuration=Release /p:Platform=x86 # Not you have to edit all the =.csproj
+          New-Item -Path 'test_binary' -ItemType Directory -Force | Out-Null; Get-ChildItem 'Release' -Filter 'testprog*.exe' -File | ForEach-Object { Move-Item $_.FullName -Destination (Join-Path 'test_binary' $_.Name) -Force; Write-Host "Moved $($_.Name)" }
+          $files = Get-ChildItem -Path "test_binary" -Filter *.exe -File | ForEach-Object { [PSCustomObject]@{ Original = $_.FullName; Packed = "$($_.DirectoryName)\packed_$($_.BaseName)$($_.Extension)" } }
+          # Show all mappings
+          Get-ChildItem -Path ${{ github.workspace }} -Recurse -File | Where-Object { $_.Name -like '*.exe' -or $_.Name -like '*.sha256sum' }
+          foreach ($item in $files) { Write-Host "Running: .\Release\JITPacker.exe `"$($item.Original)`" -o `"$($item.Packed)`""; & ".\Release\JITPacker.exe" $item.Original -o $item.Packed > $null 2>&1 }
+
+
+
+      - name: Generate SHA256 checksums and fix line endings
+        shell: pwsh
+        run: |
+          cd JITHook    
+          # Get all files except *.sha256sum recursively starting from github workspace
+          $files = Get-ChildItem -Path ${{ github.workspace }} -Recurse -File -Filter *.exe
+
+          foreach ($file in $files) {
+            # Write-Host "Processing: $($file.FullName)"
+            # Compute SHA256 hash
+            $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName
+            # Write to file with .sha256sum extension (in the same directory)
+            $line = "$($hash.Hash.ToLower())  $($file.Name)`n"
+            Write-Host $line
+            [System.IO.File]::WriteAllText("$($file.FullName).sha256sum", $line, [System.Text.Encoding]::ASCII)
+          }
+
+      - name: List all EXE files in workspace
+        run: |
+          cd JITHook    
+          Get-ChildItem -Path ${{ github.workspace }} -Recurse -File | Where-Object { $_.Name -like '*.exe' -or $_.Name -like '*.sha256sum' }
+
+
+      - name: Zip test_binary with password using 7-Zip
+        shell: pwsh
+        run: |
+          # Those test files may trigger false positive antivirus alerts. So zipped it with password
+          cd JITHook    
+          & "C:\Program Files\7-Zip\7z.exe" a -p"password" -y test_binary_${{ matrix.arch }}.zip .\test_binary\*
+
+      - name: Upload combined zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_binary_${{ matrix.arch }}
+          path: JITHook/test_binary_${{ matrix.arch }}.zip
+
+

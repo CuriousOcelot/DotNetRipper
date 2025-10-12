@@ -1,0 +1,3 @@
+qprompt
+pythonnet
+tqdm

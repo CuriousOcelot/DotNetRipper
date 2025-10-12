@@ -1,0 +1,11 @@
+**/.venv/
+**/venv/
+**/.env/
+**/env/
+**/.idea/
+**/__pycache__/
+*.pyc
+/tmp/
+/rsc/jit_hook_test_binary/
+/rsc/tmp/
+/dll_loader/Loader.exe
