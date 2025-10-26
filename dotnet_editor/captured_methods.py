@@ -72,7 +72,13 @@ class CapturedMethods:
                 if execution_seq in EXECUTION_SEQ:
                     raise Exception(f"Duplicate execution seq: {execution_seq}. Did you windbg twice???")
                 EXECUTION_SEQ.add(execution_seq)
-                json_data = json.load(f)
+                hash_part = base_name.split('-')[2].replace('.json', '')
+                content_bytes = f.read()
+                calculated_hash_part = hashlib.sha256(content_bytes).hexdigest()
+                if hash_part != calculated_hash_part:
+                    error_logging_with_no_line_num(f"File content and hash mismatch: {base_name}")
+                    raise Exception("File content and hash mismatch.")
+                json_data = json.loads(content_bytes)
                 eh_clause = EhClause(json_data, execution_seq)
                 if eh_clause.method_token_hex == '0x06000000':  # '0x06000000' is not a valid md_token
                     continue
