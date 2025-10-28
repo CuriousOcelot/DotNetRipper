@@ -20,6 +20,7 @@ class ArgParserHelper:
         self._windebug_output = str(
             os.path.join(RESOURCE_PATH, "jit_hook_test_binary", "windbg_output"))
         self._folder_name = None
+        self._preserve_rids = False
 
     @property
     def parser(self):
@@ -62,6 +63,10 @@ class ArgParserHelper:
     def windebug_output(self):
         return self._windebug_output
 
+    @property
+    def preserve_rids(self):
+        return self._preserve_rids
+
     def load_arguments(
             self,
             input_file_path,
@@ -69,7 +74,8 @@ class ArgParserHelper:
             windebug_output,
             folder_name,
             flag_test_mode,
-            flag_skip_qprompt):
+            flag_skip_qprompt,
+            preserve_rids):
         if input_file_path is not None and output_file_path is None:
             self._input_file_path = input_file_path
             self._output_file_path = os.path.join(os.path.dirname(input_file_path),
@@ -90,6 +96,7 @@ class ArgParserHelper:
 
         self._flag_test_mode = flag_test_mode
         self._flag_skip_qprompt = flag_skip_qprompt
+        self._preserve_rids = preserve_rids
 
         pass
 
@@ -109,6 +116,8 @@ class ArgParserHelper:
                             help='Skip prompt (assume yes)')
         parser.add_argument('-t', '--testmode', action='store_true', default=False,
                             help='Enable test mode')
+        parser.add_argument('-p', '--preserve_rids', action='store_true', default=False,
+                            help='Preserve Rids [eg: method token]')
 
         parsed = parser.parse_args()
         if len(sys.argv) == 1:
@@ -123,6 +132,7 @@ class ArgParserHelper:
             parsed.folder_name,
             parsed.testmode,
             parsed.yes,
+            parsed.preserve_rids
         )
 
         return arg_parser_helper

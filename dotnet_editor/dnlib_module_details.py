@@ -7,6 +7,7 @@ from dotnet_editor.utility.logger_util import getlogger
 
 load_dnlib()
 from dnlib.DotNet import ModuleDefMD
+from dnlib.DotNet.Writer import ModuleWriterOptions, MetadataFlags
 from System.IO import MemoryStream
 
 logger = getlogger(__name__.split(".")[-1], logging.DEBUG)
@@ -14,9 +15,10 @@ logger = getlogger(__name__.split(".")[-1], logging.DEBUG)
 
 class DnLibModuleDetail:
 
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes, preserve_rids=False):
         stream = MemoryStream(bytearray(data))
         self._module = ModuleDefMD.Load(stream)
+        self._preserve_rids = preserve_rids
         self._token_to_method_map: Dict[int, DotNetMethod] = {}
 
         table_stream = self._module.Metadata.TablesStream
@@ -92,7 +94,15 @@ class DnLibModuleDetail:
 
     def get_module_bytes(self):
         ms = MemoryStream()
-        self._module.Write(ms)
+        if self._preserve_rids:
+            module_writer_option = ModuleWriterOptions(self._module)
+            metadata_options = module_writer_option.MetadataOptions
+            flags = metadata_options.Flags
+            preserve_rids = flags | MetadataFlags.PreserveRids
+            metadata_options.Flags = preserve_rids
+            self._module.Write(ms, module_writer_option)
+        else:
+            self._module.Write(ms)
         raw_bytes = ms.ToArray()
         datas = bytes(bytearray(raw_bytes))
         return datas

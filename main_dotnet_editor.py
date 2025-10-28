@@ -20,6 +20,7 @@ if __name__ == '__main__':
     output_file_path = arg_parser_helper.output_file_path
     windbg_output = arg_parser_helper.windebug_output
     folder_name = arg_parser_helper.folder_name
+    preserve_rids = arg_parser_helper.preserve_rids
 
     print(f"flag_test_mode = {flag_test_mode}")
     print(f"flag_skip_qprompt = {flag_skip_qprompt}")
@@ -27,6 +28,7 @@ if __name__ == '__main__':
     print(f"output_file_path = {output_file_path}")
     print(f"windbg_output = {windbg_output}")
     print(f"folder_name = {folder_name}")
+    print(f"preserve_rids = {preserve_rids}")
 
     if not flag_skip_qprompt and not qprompt.ask_yesno(f"Edit the file: {file_path}"):
         sys.exit(1)
@@ -34,7 +36,7 @@ if __name__ == '__main__':
     info_logging_with_no_line_num(f"Parsing: {file_path}")
     with open(file_path, "rb") as reader:
         dll_content = reader.read()
-    dnlib_module_detail = DnLibModuleDetail(dll_content)
+    dnlib_module_detail = DnLibModuleDetail(dll_content, preserve_rids)
 
     # Load captured methods
     captured_methods = CapturedMethods(windbg_output, folder_name, file_path)

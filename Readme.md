@@ -7,7 +7,7 @@
 >
 > This tool is provided for educational and research purposes only.  
 > The author is not responsible for any misuse or damage caused by this software.  
-> Use it at your own risk.  
+> Use it at your own risk.
 >
 > This project does not distribute any malicious code or binaries.  
 > Users must comply with all applicable laws when using this tool.  
@@ -76,6 +76,7 @@ To test the full process, run:
 ```
 
 This will:
+
 - Extract `.\rsc\jit_hook_test_binary.zip` to `.\rsc\jit_hook_test_binary\`. Zip password is ```password```
 - Use `packed_*.exe` from `.\rsc\jit_hook_test_binary\test_binary_x64\`
 - Unpack it in bytes data and calculate the checksums
@@ -112,19 +113,20 @@ using the debug data from:
 ```bash
 (.venv) > python ./main_dotnet_editor.py -i "input_path" -o "output_path" -w "windbug_output_path" -f "folder_name_in_windebug_output_path"
 ```
+
 ## Command Line Arguments
 
 The tool supports the following command line options:
 
-| Argument                     | Description                          | Type  | Default            |
-|------------------------------|--------------------------------------|-------|--------------------|
-| `-i`, `--input`              | Input file path                      | `str` | *packed_testprog.exe* |
-| `-o`, `--output`             | Output file path                     | `str` | *un_testprog.exe*  |
-| `-w`, `--windebug`           | WinDbg output file path              | `str` | *windbg_output*    |
-| `-f`, `--folder_name`        | Subfolder name in WinDbg output path | `str` | *input file name*  |
-| `-y`, `--yes`                | Skip prompt (assume yes)             | Flag  | `False`            |
-| `-t`, `--testmode`           | Enable test mode                     | Flag  | `False`                |
-
+| Argument                | Description                          | Type  | Default               |
+|-------------------------|--------------------------------------|-------|-----------------------|
+| `-i`, `--input`         | Input file path                      | `str` | *packed_testprog.exe* |
+| `-o`, `--output`        | Output file path                     | `str` | *un_testprog.exe*     |
+| `-w`, `--windebug`      | WinDbg output file path              | `str` | *windbg_output*       |
+| `-f`, `--folder_name`   | Subfolder name in WinDbg output path | `str` | *input file name*     |
+| `-y`, `--yes`           | Skip prompt (assume yes)             | Flag  | `False`               |
+| `-t`, `--testmode`      | Enable test mode                     | Flag  | `False`               |
+| `-p`, `--preserve_rids` | Preserve Rids eg: method tokens      | Flag  | `False`               |
 
 ## ✅ Requirements
 
